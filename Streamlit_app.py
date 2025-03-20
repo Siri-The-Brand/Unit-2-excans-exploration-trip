@@ -31,7 +31,7 @@ st.sidebar.subheader("🔑 Login / Register")
 
 role = st.sidebar.selectbox("Select Your Role", ["Student", "CSE", "Admin", "Parent"])
 
-if role == "Student":
+if role == "Siri Solver":
     student_name = st.sidebar.text_input("Enter Your Name")
     if st.sidebar.button("Register / Login"):
         student_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -47,8 +47,8 @@ if role == "Student":
         st.success(f"Logged in as {student_name}. Parent Code: **{student_code}**")
 
 elif role == "Parent":
-    parent_code = st.sidebar.text_input("Enter Student's Code")
-    if st.sidebar.button("View Student Report"):
+    parent_code = st.sidebar.text_input("Enter Siri Solver's Code")
+    if st.sidebar.button("View Siri Solvers Report"):
         responses_df = pd.read_csv(RESPONSES_CSV)
         student_responses = responses_df[responses_df["student_code"] == parent_code]
 
