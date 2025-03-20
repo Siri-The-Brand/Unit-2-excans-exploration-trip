@@ -30,7 +30,7 @@ initialize_csv(STUDENT_CODES_CSV, ["student_code", "name"])
 st.sidebar.subheader("🔑 Select Your Role")
 role = st.sidebar.selectbox("Who are you?", ["Siri Solver", "CSE", "Admin", "Parent"])
 
-if role == "Student":
+if role == "Siri Solver":
     st.sidebar.subheader("👦 Enter Your Name to Start")
     student_name = st.sidebar.text_input("Enter your name")
 
