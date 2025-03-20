@@ -102,7 +102,7 @@ if "siri_solver_code" in st.session_state:
             f.write(uploaded_photo.getbuffer())
 
         checkin_df = pd.read_csv(CHECKIN_CSV)
-        new_entry = pd.DataFrame({"siri_solver_code": [siri_solver_code], "name": [st.session_state["siri_solver_code"]], "arrival_time": [arrival_time]})
+        new_entry = pd.DataFrame({"siri_solver_code": [siri_solver_code], "name": [siri_solver_name], "arrival_time": [arrival_time]})
         checkin_df = pd.concat([checkin_df, new_entry], ignore_index=True)
         checkin_df.to_csv(CHECKIN_CSV, index=False)
 
@@ -129,21 +129,21 @@ selected_activities = st.multiselect("Select all activities:", activities)
 # Activity Ratings & Photos
 activity_photos = {}
 activity_ratings = {}
+photo_filenames = []
 for activity in selected_activities:
     activity_photos[activity] = st.file_uploader(f"📸 Upload your photo from {activity}", type=["jpg", "png", "jpeg"], key=activity)
     activity_ratings[activity] = st.slider(f"Rate {activity} (1-5)", 1, 5, 3, key=f"rating_{activity}")
 
-# 📝 Reflection Questions
-st.subheader("📝 Post-Trip Reflection")
-favorite_moment = st.text_area("What was your **best moment** at Apollo Science Park?")
-career_connection = st.text_area("How did today's experience **inspire your future career**?")
-learning_takeaway = st.text_area("What is **one big thing** you learned today?")
+# 🚀 Submit Data
+if st.button("🚀 Submit Experience!"):
+    response_data = pd.DataFrame(
+        {"siri_solver_code": [siri_solver_code], "name": [siri_solver_name], 
+         "activities": [", ".join(selected_activities)], "ratings": [str(activity_ratings)], 
+         "photos": [", ".join(photo_filenames)]})
+    response_data.to_csv(RESPONSES_CSV, mode="a", index=False, header=False)
+    st.success("🎉 Your trip experience has been saved!")
 
 # 📸 Group Album
 st.subheader("📸 Apollo Science Park Group Album")
-image_files = os.listdir("apollo_photos")
-if image_files:
-    for img in image_files:
-        st.image(os.path.join("apollo_photos", img), caption=img, use_column_width=True)
-else:
-    st.warning("No photos uploaded yet.")
+for img in os.listdir("apollo_photos"):
+    st.image(os.path.join("apollo_photos", img), caption=img, use_column_width=True)
