@@ -19,24 +19,23 @@ if not os.path.exists("apollo_photos"):
     os.makedirs("apollo_photos")
 
 
-
 # CSV File Setup
-
 USER_CSV = "siri_solvers_users.csv"
-
 RESPONSES_CSV = "siri_solvers_responses.csv"
-
 CHECKIN_CSV = "siri_solvers_checkins.csv"
 
+# Function to initialize CSVs with headers if they are empty
+def initialize_csv(file_path, columns):
+    if not os.path.exists(file_path) or os.stat(file_path).st_size == 0:
+        df = pd.DataFrame(columns=columns)
+        df.to_csv(file_path, index=False)
 
+# Initialize CSVs with proper headers
+initialize_csv(USER_CSV, ["name", "role", "student_code"])
+initialize_csv(RESPONSES_CSV, ["student_code", "activities", "ratings", "favorite_moment",
+                               "career_connection", "learning_takeaway", "skills", "xp_points", "badges"])
+initialize_csv(CHECKIN_CSV, ["student_code", "arrival_time"])
 
-# Initialize CSVs if they don't exist
-
-for file in [USER_CSV, RESPONSES_CSV, CHECKIN_CSV]:
-
-    if not os.path.exists(file):
-
-        pd.DataFrame().to_csv(file, index=False)
 
 
 
