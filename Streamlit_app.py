@@ -29,7 +29,7 @@ initialize_csv(CHECKIN_CSV, ["student_code", "arrival_time"])
 # User Login / Management
 st.sidebar.subheader("🔑 Login / Register")
 
-role = st.sidebar.selectbox("Select Your Role", ["Student", "CSE", "Admin", "Parent"])
+role = st.sidebar.selectbox("Select Your Role", ["Siri Solver", "CSE", "Admin", "Parent"])
 
 if role == "Siri Solver":
     student_name = st.sidebar.text_input("Enter Your Name")
