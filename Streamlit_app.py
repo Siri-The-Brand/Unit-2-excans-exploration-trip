@@ -2,232 +2,284 @@ import streamlit as st
 
 import pandas as pd
 
+import datetime
+
+import os
+
 import random
 
+import string
 
 
-# Title
 
-st.title("🎮 Siri Solvers: Apollo Science Park Adventure")
+# Ensure directories exist
 
+if not os.path.exists("apollo_photos"):
 
+    os.makedirs("apollo_photos")
 
-# Introduction
 
-st.write(
 
-    "🌟 Welcome to the **Siri Solvers Gamified  Trip Experience ✨!** "
+# CSV File Setup
 
-    "Earn **XP points**, unlock **badges**, and track your **learning journey** as you explore LOGICALMATH through science and technology! 🚀"
+USER_CSV = "siri_solvers_users.csv"
 
-)
+RESPONSES_CSV = "siri_solvers_responses.csv"
 
+CHECKIN_CSV = "siri_solvers_checkins.csv"
 
 
-# List of activities at Apollo Science Park (customizable)
 
-activities = [
+# Initialize CSVs if they don't exist
 
-    "Robotics Lab",
+for file in [USER_CSV, RESPONSES_CSV, CHECKIN_CSV]:
 
-    "Astronomy Observation",
+    if not os.path.exists(file):
 
-    "Biology and Ecology Center",
+        pd.DataFrame().to_csv(file, index=False)
 
-    "Physics Experiments",
 
-    "AI & Coding Workshop",
 
-    "Chemistry Lab",
+# User Login / Management
 
-    "Engineering and Innovation Zone"
+st.sidebar.subheader("🔑 Login / Register")
 
-]
 
 
+role = st.sidebar.selectbox("Select Your Role", ["Student", "CSE", "Admin", "Parent"])
 
-# Data collection
 
-st.subheader("🎭 Choose Your Adventure: What Activities Did You Enjoy?")
 
-selected_activities = st.multiselect(
+if role == "Student":
 
-    "Select all activities that you found exciting:", activities
+    student_name = st.sidebar.text_input("Enter Your Name")
 
-)
+    if st.sidebar.button("Register / Login"):
 
+        student_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
+        users_df = pd.read_csv(USER_CSV)
 
-activity_ratings = {}
+        if student_name in users_df["name"].values:
 
-for activity in selected_activities:
+            student_code = users_df[users_df["name"] == student_name]["student_code"].values[0]
 
-    activity_ratings[activity] = st.slider(
+        else:
 
-        f"Rate your experience in {activity} (1 = Not Exciting, 5 = Super Fun!)", 1, 5, 3
+            new_user = pd.DataFrame({"name": [student_name], "role": ["Student"], "student_code": [student_code]})
 
-    )
+            new_user.to_csv(USER_CSV, mode="a", index=False, header=False)
 
+        st.session_state["student_code"] = student_code
 
+        st.success(f"Logged in as {student_name}. Parent Code: **{student_code}**")
 
-# Feedback on experiences
 
-st.subheader("📝 Describe Your Most Exciting Moment!")
 
-favorite_moment = st.text_area("What was the **best part** of your adventure at Apollo Science Park?")
+elif role == "Parent":
 
+    parent_code = st.sidebar.text_input("Enter Student's Code")
 
+    if st.sidebar.button("View Student Report"):
 
-# Map strengths to Siri MaP
+        responses_df = pd.read_csv(RESPONSES_CSV)
 
-st.subheader("🔬 What Skills Did You Improve? (Siri MaP)")
+        student_responses = responses_df[responses_df["student_code"] == parent_code]
 
-skills = [
+        if not student_responses.empty:
 
-    "Problem Solving",
+            st.subheader("📖 Student's Field Trip Report")
 
-    "Critical Thinking",
+            st.dataframe(student_responses.drop(columns=["student_code"]))
 
-    "Creativity",
+        else:
 
-    "Teamwork",
+            st.error("No report found for this student code.")
 
-    "Communication",
 
-    "Logical Reasoning",
 
-    "Innovation",
+elif role in ["CSE", "Admin"]:
 
-    "Scientific Inquiry"
+    if st.sidebar.button("View All Student Reports"):
 
-]
+        responses_df = pd.read_csv(RESPONSES_CSV)
 
-selected_skills = st.multiselect("Select all skills you feel you used today:", skills)
+        if not responses_df.empty:
 
+            st.subheader("📊 All Student Reports")
 
+            st.dataframe(responses_df.drop(columns=["student_code"]))
 
-# Gamification: XP Points Calculation
+        else:
 
-xp_points = len(selected_activities) * 10 + len(selected_skills) * 5
+            st.warning("No data available yet.")
 
 
 
-# Badge System
+# If logged in as Student, proceed with trip activities
 
-badges = []
+if "student_code" in st.session_state:
 
-if len(selected_activities) >= 3:
+    student_code = st.session_state["student_code"]
 
-    badges.append("🎖 Curious Explorer")  # Rated at least 3 activities
 
-if "Scientific Inquiry" in selected_skills:
 
-    badges.append("🔬 Future Scientist")  # Selected Scientific Inquiry as a skill
+    # Arrival Check-In
 
-if "Innovation" in selected_skills and "AI & Coding Workshop" in selected_activities:
+    st.subheader("🏁 Arrival Check-In & Photo Upload")
 
-    badges.append("💡 Master Innovator")  # Enjoyed AI & Coding Workshop and Innovation
+    arrival_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-if len(selected_activities) == len(activities):
+    uploaded_photo = st.file_uploader("📸 Upload your arrival photo", type=["jpg", "png", "jpeg"])
 
-    badges.append("🌍 Science Park Champion")  # Explored everything
 
 
+    if uploaded_photo:
 
-# Bonus Challenge: Spin-the-Wheel
+        file_path = os.path.join("apollo_photos", f"{student_code}_{uploaded_photo.name}")
 
-bonus_challenges = [
+        with open(file_path, "wb") as f:
 
-    "Find one real-world application of a science experiment you saw today and write about it!",
+            f.write(uploaded_photo.getbuffer())
 
-    "Teach a friend or family member something cool you learned today!",
+        checkin_data = pd.DataFrame({"student_code": [student_code], "arrival_time": [arrival_time]})
 
-    "Draw or sketch an invention inspired by today’s visit!",
+        checkin_data.to_csv(CHECKIN_CSV, mode="a", index=False, header=False)
 
-    "Write a short sci-fi story about a future where one of today's technologies changes the world!",
+        st.success("✅ Arrival Check-In Recorded!")
 
-    "Design a poster that encourages more students to explore STEM fields!"
 
-]
 
-bonus_challenge = random.choice(bonus_challenges)
+    # Activity Feedback
 
+    st.subheader("🎭 Choose Your Adventure")
 
+    activities = [
 
-# Submit feedback
+        "Robotics Lab", "Astronomy Observation", "Biology and Ecology Center",
 
-if st.button("🚀 Submit My Adventure!"):
+        "Physics Experiments", "AI & Coding Workshop", "Chemistry Lab", "Engineering Zone"
 
-    # Save feedback
+    ]
 
-    feedback_data = pd.DataFrame(
+    selected_activities = st.multiselect("Select all activities:", activities)
 
-        {
+    activity_ratings = {activity: st.slider(f"Rate {activity} (1-5)", 1, 5, 3) for activity in selected_activities}
 
-            "Activities Enjoyed": [", ".join(selected_activities)],
 
-            "Ratings": [activity_ratings],
 
-            "Favorite Moment": [favorite_moment],
+    # Reflection Questions
 
-            "Skills Improved": [", ".join(selected_skills)],
+    st.subheader("📝 Post-Trip Reflection")
 
-            "XP Earned": [xp_points],
+    favorite_moment = st.text_area("What was your **best moment** at Apollo Science Park?")
 
-            "Badges": [", ".join(badges)],
+    career_connection = st.text_area("How did today's experience **inspire your future career**?")
 
-        }
+    learning_takeaway = st.text_area("What is **one big thing** you learned today?")
 
-    )
 
 
+    # Skills Mapping (Siri MaP)
 
-    # Save to CSV (or database in production)
+    st.subheader("🔬 What Skills Did You Improve?")
 
-    feedback_data.to_csv("siri_solvers_feedback.csv", mode="a", index=False, header=False)
+    skills = ["Problem Solving", "Critical Thinking", "Creativity", "Teamwork", "Communication", "Logical Reasoning",
 
+              "Innovation", "Scientific Inquiry"]
 
+    selected_skills = st.multiselect("Select all skills:", skills)
 
-    st.success("🎉 Adventure Logged! You've earned XP and badges!")
 
 
+    # XP & Badge System
 
-    # Show XP, badges, and bonus challenge
+    xp_points = len(selected_activities) * 10 + len(selected_skills) * 5
 
-    st.subheader("🎮 Your Adventure Stats")
+    badges = []
 
-    st.write(f"⭐ **XP Points Earned:** {xp_points}")
+    if len(selected_activities) >= 3:
 
-    st.write("🏅 **Badges Unlocked:** " + (", ".join(badges) if badges else "No badges yet! Keep exploring!"))
+        badges.append("🎖 Curious Explorer")
 
-    st.write(f"🎰 **Bonus Challenge:** {bonus_challenge}")
+    if "Scientific Inquiry" in selected_skills:
 
+        badges.append("🔬 Future Scientist")
 
+    if "Innovation" in selected_skills and "AI & Coding Workshop" in selected_activities:
 
-# Display past feedback (if any)
+        badges.append("💡 Master Innovator")
 
-st.subheader("🏆 Leaderboard & Insights")
+
+
+    # Submit feedback
+
+    if st.button("🚀 Submit Experience!"):
+
+        response_data = pd.DataFrame(
+
+            {"student_code": [student_code], "activities": [", ".join(selected_activities)],
+
+             "ratings": [str(activity_ratings)], "favorite_moment": [favorite_moment],
+
+             "career_connection": [career_connection], "learning_takeaway": [learning_takeaway],
+
+             "skills": [", ".join(selected_skills)], "xp_points": [xp_points], "badges": [", ".join(badges)]})
+
+        response_data.to_csv(RESPONSES_CSV, mode="a", index=False, header=False)
+
+        st.success("🎉 Your trip experience has been saved!")
+
+
+
+    # Display Student Dashboard
+
+    st.subheader("📊 Your Field Trip Report")
+
+    responses_df = pd.read_csv(RESPONSES_CSV)
+
+    student_responses = responses_df[responses_df["student_code"] == student_code]
+
+    if not student_responses.empty:
+
+        st.dataframe(student_responses.drop(columns=["student_code"]))
+
+    else:
+
+        st.warning("No records found yet.")
+
+
+
+# Leaderboard
+
+st.subheader("🏆 Umeme Points Leaderboard ⚡")
 
 try:
 
-    past_feedback = pd.read_csv("siri_solvers_feedback.csv")
+    checkin_df = pd.read_csv(CHECKIN_CSV)
 
-    st.dataframe(past_feedback)
+    checkin_df = checkin_df.sort_values(by="arrival_time", ascending=True)
+
+    st.dataframe(checkin_df)
 
 except FileNotFoundError:
 
-    st.write("No feedback has been collected yet. Be the first to log your adventure!")
+    st.write("No check-ins yet. Be the first to check in!")
 
 
 
-# Next Steps Section
+# Group Album Section
 
-st.subheader("🔭 What's Next?")
+st.subheader("📸 Apollo Science Park Group Album")
 
-st.write(
+image_files = os.listdir("apollo_photos")
 
-    "Based on what you enjoyed and excelled at, check your **Siri MaP** for recommended clubs and learning paths! "
+if image_files:
 
-    "Keep exploring, keep solving, and keep growing! 🚀"
+    for img in image_files:
 
-)
+        st.image(os.path.join("apollo_photos", img), caption=img, use_column_width=True)
+
+else:
+
+    st.warning("No photos uploaded yet.")
