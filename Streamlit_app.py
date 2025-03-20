@@ -10,7 +10,6 @@ if not os.path.exists("apollo_photos"):
     os.makedirs("apollo_photos")
 
 # CSV File Setup
-USER_CSV = "siri_solvers_users.csv"
 RESPONSES_CSV = "siri_solvers_responses.csv"
 CHECKIN_CSV = "siri_solvers_checkins.csv"
 
@@ -21,55 +20,18 @@ def initialize_csv(file_path, columns):
         df.to_csv(file_path, index=False)
 
 # Initialize CSVs with proper headers
-initialize_csv(USER_CSV, ["name", "role", "student_code"])
-initialize_csv(RESPONSES_CSV, ["student_code", "activities", "ratings", "favorite_moment",
+initialize_csv(RESPONSES_CSV, ["name", "activities", "ratings", "favorite_moment",
                                "career_connection", "learning_takeaway", "skills", "xp_points", "badges"])
-initialize_csv(CHECKIN_CSV, ["student_code", "arrival_time"])
+initialize_csv(CHECKIN_CSV, ["name", "arrival_time"])
 
 # User Login / Management
-st.sidebar.subheader("🔑 Login / Register")
+st.sidebar.subheader("🔑 Enter Your Name")
 
-role = st.sidebar.selectbox("Select Your Role", ["Siri Solver", "CSE", "Admin", "Parent"])
+# Instead of login, students just enter their name
+student_name = st.sidebar.text_input("Enter Your Name and Start!")
 
-if role == "Siri Solver":
-    student_name = st.sidebar.text_input("Enter Your Name")
-    if st.sidebar.button("Register / Login"):
-        student_code = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
-        users_df = pd.read_csv(USER_CSV)
-        
-        if student_name in users_df["name"].values:
-            student_code = users_df[users_df["name"] == student_name]["student_code"].values[0]
-        else:
-            new_user = pd.DataFrame({"name": [student_name], "role": ["Student"], "student_code": [student_code]})
-            new_user.to_csv(USER_CSV, mode="a", index=False, header=False)
-
-        st.session_state["student_code"] = student_code
-        st.success(f"Logged in as {student_name}. Parent Code: **{student_code}**")
-
-elif role == "Parent":
-    parent_code = st.sidebar.text_input("Enter Siri Solver's Code")
-    if st.sidebar.button("View Siri Solvers Report"):
-        responses_df = pd.read_csv(RESPONSES_CSV)
-        student_responses = responses_df[responses_df["student_code"] == parent_code]
-
-        if not student_responses.empty:
-            st.subheader("📖 Student's Field Trip Report")
-            st.dataframe(student_responses.drop(columns=["student_code"]))
-        else:
-            st.error("No report found for this student code.")
-
-elif role in ["CSE", "Admin"]:
-    if st.sidebar.button("View All Student Reports"):
-        responses_df = pd.read_csv(RESPONSES_CSV)
-        if not responses_df.empty:
-            st.subheader("📊 All Student Reports")
-            st.dataframe(responses_df.drop(columns=["student_code"]))
-        else:
-            st.warning("No data available yet.")
-
-# If logged in as Student, proceed with trip activities
-if "student_code" in st.session_state:
-    student_code = st.session_state["student_code"]
+if student_name:
+    st.success(f"Welcome, {student_name}! 🚀")
 
     # Arrival Check-In
     st.subheader("🏁 Arrival Check-In & Photo Upload")
@@ -77,11 +39,11 @@ if "student_code" in st.session_state:
     uploaded_photo = st.file_uploader("📸 Upload your arrival photo", type=["jpg", "png", "jpeg"])
 
     if uploaded_photo:
-        file_path = os.path.join("apollo_photos", f"{student_code}_{uploaded_photo.name}")
+        file_path = os.path.join("apollo_photos", f"{student_name}_{uploaded_photo.name}")
         with open(file_path, "wb") as f:
             f.write(uploaded_photo.getbuffer())
 
-        checkin_data = pd.DataFrame({"student_code": [student_code], "arrival_time": [arrival_time]})
+        checkin_data = pd.DataFrame({"name": [student_name], "arrival_time": [arrival_time]})
         checkin_data.to_csv(CHECKIN_CSV, mode="a", index=False, header=False)
         st.success("✅ Arrival Check-In Recorded!")
 
@@ -119,7 +81,7 @@ if "student_code" in st.session_state:
     # Submit feedback
     if st.button("🚀 Submit Experience!"):
         response_data = pd.DataFrame(
-            {"student_code": [student_code], "activities": [", ".join(selected_activities)],
+            {"name": [student_name], "activities": [", ".join(selected_activities)],
              "ratings": [str(activity_ratings)], "favorite_moment": [favorite_moment],
              "career_connection": [career_connection], "learning_takeaway": [learning_takeaway],
              "skills": [", ".join(selected_skills)], "xp_points": [xp_points], "badges": [", ".join(badges)]})
@@ -129,9 +91,9 @@ if "student_code" in st.session_state:
     # Display Student Dashboard
     st.subheader("📊 Your Field Trip Report")
     responses_df = pd.read_csv(RESPONSES_CSV)
-    student_responses = responses_df[responses_df["student_code"] == student_code]
+    student_responses = responses_df[responses_df["name"] == student_name]
     if not student_responses.empty:
-        st.dataframe(student_responses.drop(columns=["student_code"]))
+        st.dataframe(student_responses.drop(columns=["name"]))
     else:
         st.warning("No records found yet.")
 
