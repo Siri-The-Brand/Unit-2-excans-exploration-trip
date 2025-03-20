@@ -20,7 +20,7 @@ def initialize_csv(file_path, columns):
         df = pd.DataFrame(columns=columns)
         df.to_csv(file_path, index=False)
 
-# Initialize CSVs
+# Ensure all CSVs exist with the correct structure
 initialize_csv(RESPONSES_CSV, ["siri_solver_code", "name", "activities", "ratings", "favorite_moment",
                                "career_connection", "learning_takeaway", "xp_points", "badges", "photos"])
 initialize_csv(CHECKIN_CSV, ["siri_solver_code", "name", "arrival_time"])
@@ -69,7 +69,7 @@ elif role in ["CSE", "Admin"]:
         else:
             st.warning("No data available yet.")
 
-# Why Apollo Science Park for Uwazi Unit 2
+# 🔬 Why Apollo Science Park for Uwazi Unit 2?
 st.subheader("🔬 Why Apollo Science Park for Uwazi Unit 2?")
 st.write(
     "**Unit 2 of Uwazi focuses on Exploring the Scientific World**. "
@@ -78,67 +78,72 @@ st.write(
     "This connects to the **Siri MaP** by helping Siri Solvers discover their strengths in logic, reasoning, and innovation."
 )
 
-# If logged in as Siri Solver, continue with trip activities
+# 🎮 Gamification Instructions
+st.subheader("🎮 How to Earn Points & Rewards")
+st.write("""
+- **🏆 Umeme Points** → First to arrive earns the most points!  
+- **📸 Activity Photos** → Upload photos of your favorite activities.  
+- **🎭 Activity Ratings** → Give feedback on what you enjoyed the most.  
+- **📝 Reflections** → Share your best moments, learning takeaways, and how it connects to your future!  
+- **🎖 XP & Badges** → Earn **Explorer, Scientist, and Innovator** badges based on engagement!  
+""")
+
+# 🏁 Arrival Check-In
+st.subheader("🏁 Arrival Check-In & Photo Upload")
 if "siri_solver_code" in st.session_state:
     siri_solver_code = st.session_state["siri_solver_code"]
-    siri_solver_codes_df = pd.read_csv(SIRI_SOLVER_CODES_CSV)
+    arrival_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    if not siri_solver_codes_df.empty and siri_solver_code in siri_solver_codes_df["siri_solver_code"].values:
-        siri_solver_name = siri_solver_codes_df[siri_solver_codes_df["siri_solver_code"] == siri_solver_code]["name"].values[0]
+    uploaded_photo = st.file_uploader("📸 Upload your arrival photo", type=["jpg", "png", "jpeg"])
 
-        # Arrival Check-In
-        st.subheader("🏁 Arrival Check-In & Photo Upload")
-        arrival_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
-        uploaded_photo = st.file_uploader("📸 Upload your arrival photo", type=["jpg", "png", "jpeg"])
+    if uploaded_photo:
+        file_path = os.path.join("apollo_photos", f"{siri_solver_code}_{uploaded_photo.name}")
+        with open(file_path, "wb") as f:
+            f.write(uploaded_photo.getbuffer())
 
-        if uploaded_photo:
-            file_path = os.path.join("apollo_photos", f"{siri_solver_code}_{uploaded_photo.name}")
-            with open(file_path, "wb") as f:
-                f.write(uploaded_photo.getbuffer())
-
-            checkin_data = pd.DataFrame({"siri_solver_code": [siri_solver_code], "name": [siri_solver_name], "arrival_time": [arrival_time]})
-            checkin_data.to_csv(CHECKIN_CSV, mode="a", index=False, header=False)
-            st.success("✅ Arrival Check-In Recorded!")
-
-        # Activity Feedback
-        st.subheader("🎭 Choose Your Adventure")
-        activities = [
-            "Robotics Lab", "Astronomy Observation", "Biology and Ecology Center",
-            "Physics Experiments", "AI & Coding Workshop", "Chemistry Lab", "Engineering Zone"
-        ]
-        selected_activities = st.multiselect("Select all activities:", activities)
-
-        # Activity Ratings & Photos
-        activity_photos = {}
-        activity_ratings = {}
-        for activity in selected_activities:
-            activity_photos[activity] = st.file_uploader(f"📸 Upload your photo from {activity}", type=["jpg", "png", "jpeg"], key=activity)
-            activity_ratings[activity] = st.slider(f"Rate {activity} (1-5)", 1, 5, 3, key=f"rating_{activity}")
-
-        # Reflection Questions
-        st.subheader("📝 Post-Trip Reflection")
-        favorite_moment = st.text_area("What was your **best moment** at Apollo Science Park?")
-        career_connection = st.text_area("How did today's experience **inspire your future career**?")
-        learning_takeaway = st.text_area("What is **one big thing** you learned today?")
-
-        # Submit feedback
-        if st.button("🚀 Submit Experience!"):
-            response_data = pd.DataFrame(
-                {"siri_solver_code": [siri_solver_code], "name": [siri_solver_name], "activities": [", ".join(selected_activities)],
-                 "favorite_moment": [favorite_moment], "career_connection": [career_connection], "learning_takeaway": [learning_takeaway],
-                 "ratings": [str(activity_ratings)]})
-            response_data.to_csv(RESPONSES_CSV, mode="a", index=False, header=False)
-            st.success("🎉 Your trip experience has been saved!")
-
-        # 🏆 Leaderboard (Umeme Points)
-        st.subheader("🏆 Umeme Points Leaderboard ⚡")
         checkin_df = pd.read_csv(CHECKIN_CSV)
-        if not checkin_df.empty:
-            checkin_df = checkin_df.sort_values(by="arrival_time", ascending=True)
-            st.dataframe(checkin_df)
+        new_entry = pd.DataFrame({"siri_solver_code": [siri_solver_code], "name": [st.session_state["siri_solver_code"]], "arrival_time": [arrival_time]})
+        checkin_df = pd.concat([checkin_df, new_entry], ignore_index=True)
+        checkin_df.to_csv(CHECKIN_CSV, index=False)
 
-        # 📸 Group Album
-        st.subheader("📸 Apollo Science Park Group Album")
-        for img in os.listdir("apollo_photos"):
-            st.image(os.path.join("apollo_photos", img), caption=img, use_column_width=True)
+        st.success("✅ Arrival Check-In Recorded!")
+
+# 🏆 Leaderboard (Umeme Points)
+st.subheader("🏆 Umeme Points Leaderboard ⚡")
+checkin_df = pd.read_csv(CHECKIN_CSV)
+if "arrival_time" in checkin_df.columns and not checkin_df.empty:
+    checkin_df["arrival_time"] = pd.to_datetime(checkin_df["arrival_time"])  # Ensure datetime format
+    checkin_df = checkin_df.sort_values(by="arrival_time", ascending=True)
+    st.dataframe(checkin_df)
+else:
+    st.warning("No check-ins yet. Be the first to check in!")
+
+# 🎭 Activity Selection & Ratings
+st.subheader("🎭 Choose Your Adventure")
+activities = [
+    "Robotics Lab", "Astronomy Observation", "Biology and Ecology Center",
+    "Physics Experiments", "AI & Coding Workshop", "Chemistry Lab", "Engineering Zone"
+]
+selected_activities = st.multiselect("Select all activities:", activities)
+
+# Activity Ratings & Photos
+activity_photos = {}
+activity_ratings = {}
+for activity in selected_activities:
+    activity_photos[activity] = st.file_uploader(f"📸 Upload your photo from {activity}", type=["jpg", "png", "jpeg"], key=activity)
+    activity_ratings[activity] = st.slider(f"Rate {activity} (1-5)", 1, 5, 3, key=f"rating_{activity}")
+
+# 📝 Reflection Questions
+st.subheader("📝 Post-Trip Reflection")
+favorite_moment = st.text_area("What was your **best moment** at Apollo Science Park?")
+career_connection = st.text_area("How did today's experience **inspire your future career**?")
+learning_takeaway = st.text_area("What is **one big thing** you learned today?")
+
+# 📸 Group Album
+st.subheader("📸 Apollo Science Park Group Album")
+image_files = os.listdir("apollo_photos")
+if image_files:
+    for img in image_files:
+        st.image(os.path.join("apollo_photos", img), caption=img, use_column_width=True)
+else:
+    st.warning("No photos uploaded yet.")
