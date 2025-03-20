@@ -16,9 +16,9 @@ st.title("🎮 Siri Solvers: Apollo Science Park Adventure")
 
 st.write(
 
-    "🌟 Welcome to the **Siri Solvers Gamified Field Trip Experience!** "
+    "🌟 Welcome to the **Siri Solvers Gamified  Trip Experience ✨!** "
 
-    "Earn **XP points**, unlock **badges**, and track your **learning journey** as you explore science and technology! 🚀"
+    "Earn **XP points**, unlock **badges**, and track your **learning journey** as you explore LOGICALMATH through science and technology! 🚀"
 
 )
 
