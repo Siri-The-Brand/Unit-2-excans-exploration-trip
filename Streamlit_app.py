@@ -146,4 +146,4 @@ if st.button("🚀 Submit Experience!"):
 # 📸 Group Album
 st.subheader("📸 Apollo Science Park Group Album")
 for img in os.listdir("apollo_photos"):
-    st.image(os.path.join("apollo_photos", img), caption=img, use_column_width=True)
+    st.image(os.path.join("apollo_photos", img), caption=img, use_container_width=True)
